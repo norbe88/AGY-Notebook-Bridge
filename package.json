@@ -138,7 +138,8 @@
     "build:ext": "node esbuild.extension.mjs",
     "build:webview": "node esbuild.webview.mjs",
     "watch": "node esbuild.extension.mjs --watch",
-    "watch:webview": "node esbuild.webview.mjs --watch"
+    "watch:webview": "node esbuild.webview.mjs --watch",
+    "package": "vsce package --no-dependencies"
   },
   "dependencies": {
     "marked": "^18.1.1",
