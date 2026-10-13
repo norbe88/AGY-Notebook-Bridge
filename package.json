@@ -76,14 +76,23 @@
       {
         "command": "notebook-bridge.reauthenticate",
         "title": "Notebook Bridge: Re-authenticate Session"
+      },
+      {
+        "command": "notebook-bridge.addFileAsSource",
+        "title": "Notebook Bridge: Add as NotebookLM Source"
       }
     ],
     "menus": {
       "explorer/context": [
         {
-          "command": "notebook-bridge.syncSources",
+          "command": "notebook-bridge.addFileAsSource",
           "when": "resourceExtname =~ /\\.(md|pdf|txt)$/",
-          "group": "notebooklm"
+          "group": "notebooklm@1"
+        },
+        {
+          "command": "notebook-bridge.syncSources",
+          "when": "explorerResourceIsFolder",
+          "group": "notebooklm@2"
         }
       ]
     },

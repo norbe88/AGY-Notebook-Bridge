@@ -48,6 +48,12 @@ export class StatusBarController implements vscode.Disposable {
     }
   }
 
+  public setSyncProgress(current: number, total: number, file?: string): void {
+    this.item.text = `$(sync~spin) Syncing ${current}/${total} sources...`;
+    this.item.tooltip = file ? `Uploading: ${file} (${current}/${total})` : `Syncing ${current}/${total} sources...`;
+    this.item.backgroundColor = undefined;
+  }
+
   public dispose(): void {
     try {
       this.item.dispose();

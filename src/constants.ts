@@ -15,7 +15,8 @@ export const COMMANDS = {
   AUDIO_OVERVIEW: 'notebook-bridge.audioOverview',
   SWITCH_NOTEBOOK: 'notebook-bridge.switchNotebook',
   AUTH_STATUS: 'notebook-bridge.authStatus',
-  REAUTHENTICATE: 'notebook-bridge.reauthenticate'
+  REAUTHENTICATE: 'notebook-bridge.reauthenticate',
+  ADD_FILE_AS_SOURCE: 'notebook-bridge.addFileAsSource'
 } as const;
 
 export const CONFIG_KEYS = {

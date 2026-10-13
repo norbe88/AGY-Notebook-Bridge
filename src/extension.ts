@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { COMMANDS, PANEL_VIEW_ID, CONFIG_KEYS, DEFAULTS } from './constants';
 import { checkNotebookLMAuth, AuthStatus } from './auth/preflight';
 import { SessionWatcher } from './auth/sessionWatcher';
@@ -56,7 +57,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  // 5. Register Workspace file watcher for source sync
+  // 5. Register Workspace file watcher for source sync (< 10s auto-sync)
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (workspaceFolders && workspaceFolders.length > 0) {
     const config = vscode.workspace.getConfiguration();
@@ -64,6 +65,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const autoSync = config.get<boolean>(CONFIG_KEYS.AUTO_SYNC) ?? true;
 
     if (autoSync) {
+      const fullSourcesPath = path.isAbsolute(sourcesDir)
+        ? sourcesDir
+        : path.join(workspaceFolders[0].uri.fsPath, sourcesDir);
+
       _workspaceWatcher = new WorkspaceWatcher(
         workspaceFolders[0].uri.fsPath,
         sourcesDir,
@@ -71,9 +76,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           const activeNotebookId = config.get<string>(CONFIG_KEYS.ACTIVE_NOTEBOOK_ID);
           if (activeNotebookId) {
             _statusBar?.setSyncing(true);
-            const syncResult = await deltaSync.syncSourcesToNotebook(sourcesDir, activeNotebookId);
+            const syncResult = await deltaSync.syncSourcesToNotebook(
+              fullSourcesPath,
+              activeNotebookId,
+              (current, total, file) => {
+                _statusBar?.setSyncProgress(current, total, file);
+              }
+            );
             _statusBar?.updateStatus(_sessionWatcher?.getStatus() ?? null);
             _panelProvider?.postMessage({ type: 'syncResult', result: syncResult });
+            if (syncResult.uploaded.length > 0) {
+              vscode.window.showInformationMessage(
+                `NotebookLM: Auto-synced ${syncResult.uploaded.length} source(s) in < 10s`
+              );
+            }
           }
         }
       );
@@ -186,16 +202,83 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return;
       }
 
-      const sourcesDir = config.get<string>(CONFIG_KEYS.SOURCES_DIR) || DEFAULTS.SOURCES_DIR;
+      const sourcesRelDir = config.get<string>(CONFIG_KEYS.SOURCES_DIR) || DEFAULTS.SOURCES_DIR;
+      const fullSourcesPath = path.isAbsolute(sourcesRelDir)
+        ? sourcesRelDir
+        : path.join(folders[0].uri.fsPath, sourcesRelDir);
+
       _statusBar?.setSyncing(true);
 
-      const syncResult = await deltaSync.syncSourcesToNotebook(sourcesDir, notebookId);
+      const syncResult = await deltaSync.syncSourcesToNotebook(
+        fullSourcesPath,
+        notebookId,
+        (current, total, file) => {
+          _statusBar?.setSyncProgress(current, total, file);
+        }
+      );
       _statusBar?.updateStatus(_sessionWatcher?.getStatus() ?? null);
 
       vscode.window.showInformationMessage(
         `NotebookLM: Synced ${syncResult.uploaded.length} sources (${syncResult.skipped.length} unchanged)`
       );
       _panelProvider?.postMessage({ type: 'syncResult', result: syncResult });
+    }),
+
+    vscode.commands.registerCommand(COMMANDS.ADD_FILE_AS_SOURCE, async (fileUri?: vscode.Uri) => {
+      let targetUri = fileUri;
+      if (!targetUri) {
+        const activeEditor = vscode.window.activeTextEditor;
+        if (activeEditor) {
+          targetUri = activeEditor.document.uri;
+        }
+      }
+
+      if (!targetUri || targetUri.scheme !== 'file') {
+        vscode.window.showErrorMessage('Please select a local Markdown, PDF, or text file.');
+        return;
+      }
+
+      const ext = path.extname(targetUri.fsPath).toLowerCase();
+      if (!['.md', '.pdf', '.txt'].includes(ext)) {
+        vscode.window.showWarningMessage(
+          `NotebookLM supports .md, .pdf, and .txt files. "${ext}" is not supported.`
+        );
+        return;
+      }
+
+      const config = vscode.workspace.getConfiguration();
+      let notebookId = config.get<string>(CONFIG_KEYS.ACTIVE_NOTEBOOK_ID);
+      if (!notebookId) {
+        await vscode.commands.executeCommand(COMMANDS.SWITCH_NOTEBOOK);
+        notebookId = config.get<string>(CONFIG_KEYS.ACTIVE_NOTEBOOK_ID);
+        if (!notebookId) return;
+      }
+
+      const folders = vscode.workspace.workspaceFolders;
+      const workspaceRoot = folders && folders.length > 0 ? folders[0].uri.fsPath : '';
+      const sourcesRelDir = config.get<string>(CONFIG_KEYS.SOURCES_DIR) || DEFAULTS.SOURCES_DIR;
+      const sourcesDir = workspaceRoot ? path.join(workspaceRoot, sourcesRelDir) : undefined;
+
+      const filename = path.basename(targetUri.fsPath);
+      _statusBar?.setSyncing(true, `$(sync~spin) Adding ${filename}...`);
+
+      const res = await deltaSync.syncSingleFile(targetUri.fsPath, notebookId, sourcesDir);
+      _statusBar?.updateStatus(_sessionWatcher?.getStatus() ?? null);
+
+      if (res.ok) {
+        if (res.skipped) {
+          vscode.window.showInformationMessage(
+            `NotebookLM: ${filename} is already up to date (hash matches).`
+          );
+        } else {
+          vscode.window.showInformationMessage(
+            `NotebookLM: Added ${filename} as source!`
+          );
+        }
+        _panelProvider?.postMessage({ type: 'sourceAdded', file: filename });
+      } else {
+        vscode.window.showErrorMessage(`Failed to add source: ${res.error}`);
+      }
     }),
 
     vscode.commands.registerCommand(COMMANDS.RUN_QUERY, async () => {

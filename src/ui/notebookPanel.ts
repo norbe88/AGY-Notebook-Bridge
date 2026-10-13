@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { NotebookClient } from '../api/notebookClient';
 import { QueryRunner } from '../api/queryRunner';
 import { DeltaSyncEngine } from '../sync/deltaSync';
@@ -175,11 +176,14 @@ export class NotebookPanelProvider implements vscode.WebviewViewProvider, vscode
         }
 
         const config = vscode.workspace.getConfiguration();
-        const sourcesDir =
+        const sourcesRelDir =
           config.get<string>(CONFIG_KEYS.SOURCES_DIR) || DEFAULTS.SOURCES_DIR;
+        const fullSourcesPath = path.isAbsolute(sourcesRelDir)
+          ? sourcesRelDir
+          : path.join(workspaceFolders[0].uri.fsPath, sourcesRelDir);
 
         const syncResult = await this.deltaSync.syncSourcesToNotebook(
-          sourcesDir,
+          fullSourcesPath,
           notebookId
         );
 
