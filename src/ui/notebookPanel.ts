@@ -20,7 +20,8 @@ export class NotebookPanelProvider implements vscode.WebviewViewProvider, vscode
     private readonly queryRunner: QueryRunner,
     private readonly deltaSync: DeltaSyncEngine,
     private getLatestAuthStatus: () => AuthStatus | null,
-    private onReauthenticate?: () => void
+    private onReauthenticate?: () => void,
+    private onSwitchAccount?: () => void
   ) {}
 
   public resolveWebviewView(
@@ -120,6 +121,15 @@ export class NotebookPanelProvider implements vscode.WebviewViewProvider, vscode
           this.onReauthenticate();
         } else {
           vscode.commands.executeCommand(COMMANDS.REAUTHENTICATE);
+        }
+        break;
+      }
+
+      case 'switchAccount': {
+        if (this.onSwitchAccount) {
+          this.onSwitchAccount();
+        } else {
+          vscode.commands.executeCommand(COMMANDS.SWITCH_ACCOUNT);
         }
         break;
       }

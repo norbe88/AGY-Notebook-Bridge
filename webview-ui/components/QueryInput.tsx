@@ -23,7 +23,7 @@ export const QueryInput: React.FC<QueryInputProps> = ({ onRunQuery, isLoading })
 
   return (
     <form onSubmit={handleSubmit} style={{ marginBottom: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 6, marginBottom: 6 }}>
         <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-muted)' }}>
           Research Query
         </span>
@@ -33,8 +33,8 @@ export const QueryInput: React.FC<QueryInputProps> = ({ onRunQuery, isLoading })
             onChange={(e) => setMode(e.target.value as 'fast' | 'deep')}
             style={{ fontSize: 11, padding: '2px 6px' }}
           >
-            <option value="fast">⚡ Fast Research</option>
-            <option value="deep">🔬 Deep Research</option>
+            <option value="fast">⚡ Fast</option>
+            <option value="deep">🔬 Deep</option>
           </select>
         </div>
       </div>
@@ -45,10 +45,10 @@ export const QueryInput: React.FC<QueryInputProps> = ({ onRunQuery, isLoading })
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Enter research prompt (grounded in notebook sources)... Press Ctrl+Enter to run"
-        style={{ width: '100%', resize: 'vertical', marginBottom: 8 }}
+        style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', resize: 'vertical', marginBottom: 8 }}
       />
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6 }}>
         <button
           type="submit"
           className="primary"

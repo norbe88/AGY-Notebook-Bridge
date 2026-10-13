@@ -60,16 +60,18 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       <div
         style={{
           display: 'flex',
+          flexWrap: 'wrap',
           justifyContent: 'space-between',
           alignItems: 'center',
+          gap: 6,
           marginBottom: 10,
           borderBottom: '1px solid var(--border)',
           paddingBottom: 8
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: 'var(--text)' }}>
-            AUDIO OVERVIEW (PODCAST)
+            AUDIO OVERVIEW
           </span>
           {isGenerating && <span className="badge amber">Generating...</span>}
         </div>
@@ -97,8 +99,10 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           <div
             style={{
               display: 'flex',
+              flexWrap: 'wrap',
               justifyContent: 'space-between',
               alignItems: 'center',
+              gap: 8,
               fontSize: 11
             }}
           >

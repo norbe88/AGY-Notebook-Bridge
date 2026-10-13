@@ -16,6 +16,7 @@ export const COMMANDS = {
   SWITCH_NOTEBOOK: 'notebook-bridge.switchNotebook',
   AUTH_STATUS: 'notebook-bridge.authStatus',
   REAUTHENTICATE: 'notebook-bridge.reauthenticate',
+  SWITCH_ACCOUNT: 'notebook-bridge.switchAccount',
   ADD_FILE_AS_SOURCE: 'notebook-bridge.addFileAsSource'
 } as const;
 

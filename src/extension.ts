@@ -15,6 +15,7 @@ import { WorkspaceWatcher } from './sync/workspaceWatcher';
 import { AudioOverviewService } from './audio/audioOverview';
 import { StatusBarController } from './ui/statusBarItem';
 import { NotebookPanelProvider } from './ui/notebookPanel';
+import { ProfileManager } from './auth/profileManager';
 
 let _sessionWatcher: SessionWatcher | null = null;
 let _statusBar: StatusBarController | null = null;
@@ -27,6 +28,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const queryRunner = new QueryRunner();
   const deltaSync = new DeltaSyncEngine(client);
   const audioService = new AudioOverviewService();
+  const profileManager = new ProfileManager();
 
   // 2. Initialize UI controllers
   _statusBar = new StatusBarController();
@@ -43,6 +45,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   _sessionWatcher.start();
 
+  const handleAccountSwitched = async () => {
+    const newStatus = await _sessionWatcher?.checkNow();
+    if (newStatus?.ok) {
+      const nbs = await client.listNotebooks();
+      _panelProvider?.postMessage({ type: 'notebookList', notebooks: nbs });
+    }
+  };
+
   // 4. Register Webview Provider for Activity Bar
   _panelProvider = new NotebookPanelProvider(
     context.extensionUri,
@@ -50,7 +60,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     queryRunner,
     deltaSync,
     () => _sessionWatcher?.getStatus() ?? null,
-    () => _sessionWatcher?.triggerReauthentication()
+    () => _sessionWatcher?.triggerReauthentication(),
+    () => profileManager.promptSwitchAccount(handleAccountSwitched)
   );
   context.subscriptions.push(_panelProvider);
 
@@ -127,6 +138,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     vscode.commands.registerCommand(COMMANDS.REAUTHENTICATE, () => {
       _sessionWatcher?.triggerReauthentication();
+    }),
+
+    vscode.commands.registerCommand(COMMANDS.SWITCH_ACCOUNT, () => {
+      profileManager.promptSwitchAccount(handleAccountSwitched);
     }),
 
     vscode.commands.registerCommand(COMMANDS.SWITCH_NOTEBOOK, async () => {

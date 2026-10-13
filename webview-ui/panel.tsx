@@ -161,21 +161,23 @@ export const ResearchPanel: React.FC = () => {
       <div
         style={{
           display: 'flex',
+          flexWrap: 'wrap',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '6px 10px',
+          gap: 8,
+          padding: '8px 10px',
           background: 'var(--card)',
           borderRadius: 'var(--radius)',
           border: '1px solid var(--border)',
           marginBottom: 16
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontWeight: 600, fontSize: 11, color: 'var(--text)' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontWeight: 700, fontSize: 11, color: 'var(--text)', letterSpacing: 0.3 }}>
             NotebookLM
           </span>
           {authStatus?.ok ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <span className="badge green">Connected</span>
               <button
                 onClick={() => vscode.postMessage({ type: 'getAuthStatus' })}
@@ -186,7 +188,7 @@ export const ResearchPanel: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
               <span className="badge amber">Token Expired</span>
               <button
                 onClick={handleReauthenticate}
@@ -207,11 +209,18 @@ export const ResearchPanel: React.FC = () => {
             </div>
           )}
         </div>
-        {authStatus?.email && (
-          <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-            {authStatus.email}
+
+        {/* Account Switcher Button */}
+        <button
+          onClick={() => vscode.postMessage({ type: 'switchAccount' })}
+          className="account-btn"
+          title="Click to switch Google Account / Profile"
+        >
+          <span className="mono truncate-text">
+            {authStatus?.email || 'Switch Account'}
           </span>
-        )}
+          <span style={{ fontSize: 9, opacity: 0.7 }}>▾</span>
+        </button>
       </div>
 
       {/* Notebook Selector */}
@@ -242,6 +251,29 @@ export const ResearchPanel: React.FC = () => {
         onOpenFile={handleOpenFile}
         isGenerating={isGeneratingAudio}
       />
+
+      {/* Skill Bridge Footer Callout */}
+      <div
+        style={{
+          marginTop: 16,
+          padding: '8px 10px',
+          background: 'var(--bg-subtle)',
+          borderRadius: 'var(--radius)',
+          border: '1px dashed var(--border)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 4
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)' }}>
+            ⚡ /nb Research Skill Linked
+          </span>
+        </div>
+        <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+          Type <code style={{ color: 'var(--accent)', background: 'var(--card)', padding: '1px 4px', borderRadius: 2 }}>/nb &lt;prompt&gt;</code> in Antigravity chat for autonomous web/notebook research. New notes land in <code className="mono">docs/research/</code> and sync live here.
+        </p>
+      </div>
     </div>
   );
 };

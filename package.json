@@ -78,6 +78,10 @@
         "title": "Notebook Bridge: Re-authenticate Session"
       },
       {
+        "command": "notebook-bridge.switchAccount",
+        "title": "Notebook Bridge: Switch Google Account Profile"
+      },
+      {
         "command": "notebook-bridge.addFileAsSource",
         "title": "Notebook Bridge: Add as NotebookLM Source"
       }

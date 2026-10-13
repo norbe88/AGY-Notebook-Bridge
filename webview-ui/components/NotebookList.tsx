@@ -24,11 +24,11 @@ export const NotebookList: React.FC<NotebookListProps> = ({
 }) => {
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 6, marginBottom: 6 }}>
         <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-muted)' }}>
           Active Notebook
         </span>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
           <button
             onClick={onRefresh}
             title="Refresh notebook list"
@@ -50,7 +50,7 @@ export const NotebookList: React.FC<NotebookListProps> = ({
       <select
         value={selectedId}
         onChange={(e) => onSelect(e.target.value)}
-        style={{ width: '100%' }}
+        style={{ width: '100%', maxWidth: '100%', textOverflow: 'ellipsis' }}
       >
         <option value="" disabled>-- Select a Notebook --</option>
         {notebooks.map((nb) => (

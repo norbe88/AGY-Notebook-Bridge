@@ -51,8 +51,10 @@ export const ResultStream: React.FC<ResultStreamProps> = ({
       <div
         style={{
           display: 'flex',
+          flexWrap: 'wrap',
           justifyContent: 'space-between',
           alignItems: 'center',
+          gap: 6,
           marginBottom: 10,
           borderBottom: '1px solid var(--border)',
           paddingBottom: 8
@@ -61,11 +63,11 @@ export const ResultStream: React.FC<ResultStreamProps> = ({
         <div style={{ display: 'flex', alignItems: 'center' }}>
           {isLoading && <span className="pulse-dot" />}
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: 'var(--accent)' }}>
-            {isLoading ? 'STREAMING RESEARCH CHUNKS...' : 'RESEARCH RESULT'}
+            {isLoading ? 'STREAMING...' : 'RESEARCH RESULT'}
           </span>
         </div>
 
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
           {content && (
             <button
               onClick={handleCopy}
@@ -83,7 +85,7 @@ export const ResultStream: React.FC<ResultStreamProps> = ({
               style={{ fontSize: 11, padding: '2px 8px' }}
               title="Save markdown document into docs/research/ in workspace"
             >
-              Save to Workspace (.md)
+              Save (.md)
             </button>
           )}
         </div>
@@ -93,22 +95,25 @@ export const ResultStream: React.FC<ResultStreamProps> = ({
         <div
           style={{
             display: 'flex',
+            flexWrap: 'wrap',
             justifyContent: 'space-between',
             alignItems: 'center',
+            gap: 6,
             background: 'var(--bg-subtle)',
             border: '1px solid var(--border)',
             padding: '6px 10px',
             borderRadius: 'var(--radius)',
             fontSize: 11,
             color: 'var(--success)',
-            marginBottom: 10
+            marginBottom: 10,
+            overflowWrap: 'anywhere'
           }}
         >
-          <span>✓ Saved: <strong className="mono">{savedPath}</strong></span>
+          <span style={{ wordBreak: 'break-all' }}>✓ Saved: <strong className="mono">{savedPath}</strong></span>
           {onOpenFile && (
             <button
               onClick={() => onOpenFile(savedPath)}
-              style={{ fontSize: 10, padding: '1px 6px' }}
+              style={{ fontSize: 10, padding: '1px 6px', whiteSpace: 'nowrap' }}
             >
               Open in Editor
             </button>
