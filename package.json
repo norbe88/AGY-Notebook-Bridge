@@ -8,7 +8,8 @@
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Visualization"
   ],
   "keywords": [
     "antigravity",
@@ -29,6 +30,24 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ag-notebook",
+          "title": "NotebookLM Research",
+          "icon": "assets/notebook.svg"
+        }
+      ]
+    },
+    "views": {
+      "ag-notebook": [
+        {
+          "type": "webview",
+          "id": "ag-notebook.panel",
+          "name": "Research Panel"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "notebook-bridge.open",
@@ -55,6 +74,15 @@
         "title": "Notebook Bridge: Check Auth Status"
       }
     ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "notebook-bridge.syncSources",
+          "when": "resourceExtname =~ /\\.(md|pdf|txt)$/",
+          "group": "notebooklm"
+        }
+      ]
+    },
     "configuration": {
       "title": "AGY Notebook Bridge",
       "properties": {
@@ -75,25 +103,40 @@
         },
         "notebookBridge.defaultResearchMode": {
           "type": "string",
-          "enum": ["fast", "deep"],
+          "enum": [
+            "fast",
+            "deep"
+          ],
           "default": "fast",
           "description": "Default research mode for queries."
+        },
+        "notebookBridge.activeNotebookId": {
+          "type": "string",
+          "default": "",
+          "description": "Active Notebook ID bound to current workspace."
         }
       }
     }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "lint": "eslint src --ext ts"
+    "compile": "npm run typecheck && npm run build:ext && npm run build:webview",
+    "typecheck": "tsc --noEmit -p ./tsconfig.extension.json && tsc --noEmit -p ./tsconfig.webview.json",
+    "build:ext": "node esbuild.extension.mjs",
+    "build:webview": "node esbuild.webview.mjs",
+    "watch": "node esbuild.extension.mjs --watch",
+    "watch:webview": "node esbuild.webview.mjs --watch"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
     "@types/vscode": "^1.85.0",
-    "@types/node": "^20.x",
-    "@typescript-eslint/eslint-plugin": "^7.x",
-    "@typescript-eslint/parser": "^7.x",
-    "eslint": "^8.x",
-    "typescript": "^5.x"
+    "esbuild": "^0.21.5",
+    "typescript": "^5.4.5"
   }
 }
