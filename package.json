@@ -1,0 +1,99 @@
+{
+  "name": "agy-notebook-bridge",
+  "displayName": "AGY Notebook Bridge",
+  "description": "Bring Google NotebookLM into Antigravity IDE — workspace source sync, grounded research queries, and Audio Overview playback without leaving the editor.",
+  "version": "0.1.0",
+  "publisher": "norbe88",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "antigravity",
+    "notebooklm",
+    "research",
+    "google",
+    "notebook",
+    "ai"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/norbe88/AGY-Notebook-Bridge.git"
+  },
+  "license": "MIT",
+  "icon": "assets/icon.png",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "notebook-bridge.open",
+        "title": "Notebook Bridge: Open Panel"
+      },
+      {
+        "command": "notebook-bridge.syncSources",
+        "title": "Notebook Bridge: Sync Sources"
+      },
+      {
+        "command": "notebook-bridge.query",
+        "title": "Notebook Bridge: Run Research Query"
+      },
+      {
+        "command": "notebook-bridge.audioOverview",
+        "title": "Notebook Bridge: Generate Audio Overview"
+      },
+      {
+        "command": "notebook-bridge.switchNotebook",
+        "title": "Notebook Bridge: Switch Active Notebook"
+      },
+      {
+        "command": "notebook-bridge.authStatus",
+        "title": "Notebook Bridge: Check Auth Status"
+      }
+    ],
+    "configuration": {
+      "title": "AGY Notebook Bridge",
+      "properties": {
+        "notebookBridge.sourcesDir": {
+          "type": "string",
+          "default": "docs/notebooklm_sources",
+          "description": "Workspace-relative path to sources directory synced to NotebookLM."
+        },
+        "notebookBridge.researchOutputDir": {
+          "type": "string",
+          "default": "docs/research",
+          "description": "Workspace-relative path where research query results are saved."
+        },
+        "notebookBridge.autoSync": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically sync sources on file change in sourcesDir."
+        },
+        "notebookBridge.defaultResearchMode": {
+          "type": "string",
+          "enum": ["fast", "deep"],
+          "default": "fast",
+          "description": "Default research mode for queries."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.x",
+    "@typescript-eslint/eslint-plugin": "^7.x",
+    "@typescript-eslint/parser": "^7.x",
+    "eslint": "^8.x",
+    "typescript": "^5.x"
+  }
+}
