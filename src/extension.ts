@@ -44,6 +44,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
 
   _sessionWatcher.start();
+  profileManager.ensureAGYDefaultSync().catch(() => {});
 
   const handleAccountSwitched = async () => {
     const newStatus = await _sessionWatcher?.checkNow();

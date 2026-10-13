@@ -38,6 +38,43 @@ export class ProfileManager {
   }
 
   /**
+   * Retrieves the current logged-in Google / Antigravity account in Antigravity IDE
+   */
+  public async getAGYDefaultAccount(): Promise<string | null> {
+    for (const provider of ['google', 'antigravity-auth']) {
+      try {
+        const session = await vscode.authentication.getSession(
+          provider,
+          ['https://www.googleapis.com/auth/userinfo.email'],
+          { createIfNone: false }
+        );
+        if (session?.account?.label) {
+          return session.account.label.toLowerCase();
+        }
+      } catch {}
+    }
+    return null;
+  }
+
+  /**
+   * Automatically sets active profile to match AGY logged-in user if available
+   */
+  public async ensureAGYDefaultSync(): Promise<void> {
+    const agyEmail = await this.getAGYDefaultAccount();
+    if (!agyEmail) return;
+
+    const profiles = await this.listProfiles();
+    const active = profiles.find((p) => p.active);
+
+    if (active?.account?.toLowerCase() === agyEmail) return;
+
+    const matchingProfile = profiles.find((p) => p.account?.toLowerCase() === agyEmail);
+    if (matchingProfile) {
+      await this.switchProfile(matchingProfile.name);
+    }
+  }
+
+  /**
    * Switches the active default profile
    */
   public async switchProfile(name: string): Promise<boolean> {
@@ -115,10 +152,11 @@ export class ProfileManager {
    */
   public async promptSwitchAccount(onSwitched?: () => void): Promise<void> {
     const profiles = await this.listProfiles();
+    const agyEmail = await this.getAGYDefaultAccount();
 
     type ProfilePickItem = vscode.QuickPickItem & {
       profileName?: string;
-      action?: 'switch' | 'create' | 'fresh';
+      action?: 'switch' | 'create' | 'fresh' | 'agy-link';
     };
 
     const items: ProfilePickItem[] = [
@@ -130,10 +168,16 @@ export class ProfileManager {
 
     for (const p of profiles) {
       const isCurrent = p.active;
+      const isAgyMatch = agyEmail && p.account?.toLowerCase() === agyEmail.toLowerCase();
       const accountLabel = p.account ? ` (${p.account})` : '';
+      let desc = isCurrent ? 'Active Account' : p.authenticated ? 'Configured' : 'Needs Auth';
+      if (isAgyMatch) {
+        desc = isCurrent ? 'Active (Default AGY Account)' : 'Default AGY Account';
+      }
+
       items.push({
         label: `${isCurrent ? '$(check) ' : '$(account) '}${p.name}${accountLabel}`,
-        description: isCurrent ? 'Active Account' : p.authenticated ? 'Configured' : 'Needs Auth',
+        description: desc,
         detail: `Profile: ${p.name}`,
         profileName: p.name,
         action: 'switch'
@@ -144,7 +188,18 @@ export class ProfileManager {
       {
         label: 'Actions',
         kind: vscode.QuickPickItemKind.Separator
-      },
+      }
+    );
+
+    if (agyEmail && !profiles.some((p) => p.account?.toLowerCase() === agyEmail.toLowerCase())) {
+      items.push({
+        label: `$(sparkle) Connect Active AGY Account: ${agyEmail}...`,
+        description: 'Auto-detected from Antigravity IDE session',
+        action: 'fresh'
+      });
+    }
+
+    items.push(
       {
         label: '$(add) Add New Google Account / Profile...',
         description: 'Create a new named profile and sign in via Chrome',
