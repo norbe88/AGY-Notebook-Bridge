@@ -1,11 +1,13 @@
 /**
  * Research Query Runner
- * Handles execution of Fast & Deep research queries with streaming and workspace persistence.
+ * Handles execution of Fast & Deep research queries with real-time chunk streaming
+ * and workspace markdown persistence with mandatory date/time stamps.
  */
 
 import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getNotebookLMCli } from '../auth/preflight';
 
 export interface QueryOptions {
   notebookId: string;
@@ -20,20 +22,18 @@ export interface QueryResult {
 }
 
 export class QueryRunner {
-  private readonly isWin = process.platform === 'win32';
-  private readonly cliCommand = this.isWin ? 'notebooklm.cmd' : 'notebooklm';
-
   /**
-   * Executes a research query and streams chunks back
+   * Executes a research query and streams chunks back in real-time
    */
   public async executeQuery(options: QueryOptions): Promise<QueryResult> {
-    const { notebookId, query, mode, onChunk } = options;
+    const { notebookId, query, onChunk } = options;
+    const { cmd, baseArgs } = getNotebookLMCli();
 
     return new Promise((resolve, reject) => {
-      const args = ['query', notebookId, query, '--mode', mode];
+      const args = [...baseArgs, 'ask', '-n', notebookId, query];
 
-      const child = spawn(this.cliCommand, args, {
-        shell: this.isWin
+      const child = spawn(cmd, args, {
+        shell: false
       });
 
       let accumulated = '';
@@ -45,7 +45,7 @@ export class QueryRunner {
       });
 
       child.stderr.on('data', (_data: Buffer) => {
-        // Log or handle stderr streaming if necessary
+        // Stderr logging / telemetry
       });
 
       child.on('error', (err) => {
@@ -53,22 +53,17 @@ export class QueryRunner {
       });
 
       child.on('close', (code) => {
-        if (code === 0) {
+        if (code === 0 || accumulated.trim().length > 0) {
           resolve({ content: accumulated });
         } else {
-          // If CLI query exited with non-zero, still return whatever accumulated or an error
-          if (accumulated.trim().length > 0) {
-            resolve({ content: accumulated });
-          } else {
-            reject(new Error(`Query process exited with code ${code}`));
-          }
+          reject(new Error(`NotebookLM Query failed (exit code ${code})`));
         }
       });
     });
   }
 
   /**
-   * Persists research result as a markdown file inside the workspace
+   * Persists research result as a markdown file inside the workspace docs/research/
    */
   public saveResult(
     workspaceRoot: string,
@@ -81,19 +76,21 @@ export class QueryRunner {
       fs.mkdirSync(targetDir, { recursive: true });
     }
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10);
+    const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '');
     const sanitizedTitle = query
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .slice(0, 40)
       .replace(/^-|-$/g, '');
 
-    const filename = `${timestamp}_${sanitizedTitle || 'research'}.md`;
+    const filename = `${dateStr}_${timeStr}_${sanitizedTitle || 'research'}.md`;
     const fullPath = path.join(targetDir, filename);
 
     const fileContent = `# NotebookLM Research: ${query}
-> **Data & Ora:** ${new Date().toISOString()}  
-> **Mod:** Fast/Deep Research  
+> **Data & Ora:** ${now.toISOString()}  
+> **Mod:** Grounded Research (${now.toLocaleTimeString()})  
 
 ---
 

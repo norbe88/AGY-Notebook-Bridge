@@ -96,6 +96,24 @@ export class NotebookPanelProvider implements vscode.WebviewViewProvider, vscode
         break;
       }
 
+      case 'openFile': {
+        const { filePath } = message;
+        if (filePath) {
+          try {
+            const uri = vscode.Uri.file(filePath);
+            await vscode.commands.executeCommand('vscode.open', uri);
+          } catch {
+            vscode.window.showErrorMessage(`Failed to open file: ${filePath}`);
+          }
+        }
+        break;
+      }
+
+      case 'generateAudio': {
+        vscode.commands.executeCommand(COMMANDS.AUDIO_OVERVIEW);
+        break;
+      }
+
       case 'reauthenticate': {
         vscode.commands.executeCommand(COMMANDS.REAUTHENTICATE);
         break;

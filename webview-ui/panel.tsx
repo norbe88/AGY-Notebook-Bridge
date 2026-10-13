@@ -126,6 +126,13 @@ export const ResearchPanel: React.FC = () => {
     });
   };
 
+  const handleOpenFile = (filePath: string) => {
+    vscode.postMessage({
+      type: 'openFile',
+      filePath
+    });
+  };
+
   const handleGenerateAudio = () => {
     if (!selectedNotebookId) return;
     setIsGeneratingAudio(true);
@@ -194,6 +201,7 @@ export const ResearchPanel: React.FC = () => {
         content={streamContent}
         isLoading={isQuerying}
         onSaveToWorkspace={handleSaveResult}
+        onOpenFile={handleOpenFile}
         savedPath={savedPath}
       />
 
@@ -201,6 +209,7 @@ export const ResearchPanel: React.FC = () => {
       <AudioPlayer
         audioUrl={audioUrl}
         onGenerateAudio={handleGenerateAudio}
+        onOpenFile={handleOpenFile}
         isGenerating={isGeneratingAudio}
       />
     </div>
