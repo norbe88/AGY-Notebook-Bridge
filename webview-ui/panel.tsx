@@ -16,6 +16,7 @@ const vscode = acquireVsCodeApi();
 
 export const ResearchPanel: React.FC = () => {
   const [authStatus, setAuthStatus] = useState<{ ok: boolean; email?: string; error?: string } | null>(null);
+  const [isReauthenticating, setIsReauthenticating] = useState<boolean>(false);
   const [notebooks, setNotebooks] = useState<NotebookItem[]>([]);
   const [selectedNotebookId, setSelectedNotebookId] = useState<string>('');
   const [isQuerying, setIsQuerying] = useState<boolean>(false);
@@ -24,6 +25,15 @@ export const ResearchPanel: React.FC = () => {
   const [savedPath, setSavedPath] = useState<string>('');
   const [audioUrl, setAudioUrl] = useState<string>('');
   const [isGeneratingAudio, setIsGeneratingAudio] = useState<boolean>(false);
+
+  const handleReauthenticate = () => {
+    setIsReauthenticating(true);
+    vscode.postMessage({ type: 'reauthenticate' });
+    setTimeout(() => {
+      vscode.postMessage({ type: 'getAuthStatus' });
+    }, 3500);
+    setTimeout(() => setIsReauthenticating(false), 12000);
+  };
 
   useEffect(() => {
     // Notify extension host that webview is mounted
@@ -34,6 +44,9 @@ export const ResearchPanel: React.FC = () => {
       switch (msg.type) {
         case 'authStatus':
           setAuthStatus(msg.status);
+          if (msg.status?.ok) {
+            setIsReauthenticating(false);
+          }
           break;
 
         case 'notebookList':
@@ -162,17 +175,34 @@ export const ResearchPanel: React.FC = () => {
             NotebookLM
           </span>
           {authStatus?.ok ? (
-            <span className="badge green">Connected</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span className="badge green">Connected</span>
+              <button
+                onClick={() => vscode.postMessage({ type: 'getAuthStatus' })}
+                style={{ fontSize: 10, padding: '1px 5px', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                title="Refresh Auth Status"
+              >
+                ↻
+              </button>
+            </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span className="badge amber">Token Expired</span>
               <button
-                onClick={() => vscode.postMessage({ type: 'reauthenticate' })}
-                style={{ fontSize: 10, padding: '1px 6px' }}
+                onClick={handleReauthenticate}
+                disabled={isReauthenticating}
+                style={{ fontSize: 10, padding: '2px 8px', opacity: isReauthenticating ? 0.7 : 1, cursor: isReauthenticating ? 'wait' : 'pointer' }}
                 className="primary"
                 title="Log in via Google Chrome"
               >
-                Re-authenticate
+                {isReauthenticating ? 'Opening Chrome...' : 'Re-authenticate'}
+              </button>
+              <button
+                onClick={() => vscode.postMessage({ type: 'getAuthStatus' })}
+                style={{ fontSize: 10, padding: '1px 5px', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                title="Check Auth Status Now"
+              >
+                ↻
               </button>
             </div>
           )}

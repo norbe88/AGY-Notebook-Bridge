@@ -41,13 +41,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     _panelProvider?.postMessage({ type: 'authStatus', status });
   });
 
+  _sessionWatcher.start();
+
   // 4. Register Webview Provider for Activity Bar
   _panelProvider = new NotebookPanelProvider(
     context.extensionUri,
     client,
     queryRunner,
     deltaSync,
-    () => _sessionWatcher?.getStatus() ?? null
+    () => _sessionWatcher?.getStatus() ?? null,
+    () => _sessionWatcher?.triggerReauthentication()
   );
   context.subscriptions.push(_panelProvider);
 

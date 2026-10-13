@@ -8,7 +8,7 @@ import * as path from 'path';
 import { NotebookClient } from '../api/notebookClient';
 import { QueryRunner } from '../api/queryRunner';
 import { DeltaSyncEngine } from '../sync/deltaSync';
-import { AuthStatus } from '../auth/preflight';
+import { AuthStatus, checkNotebookLMAuth } from '../auth/preflight';
 import { COMMANDS, CONFIG_KEYS, DEFAULTS } from '../constants';
 
 export class NotebookPanelProvider implements vscode.WebviewViewProvider, vscode.Disposable {
@@ -19,7 +19,8 @@ export class NotebookPanelProvider implements vscode.WebviewViewProvider, vscode
     private readonly client: NotebookClient,
     private readonly queryRunner: QueryRunner,
     private readonly deltaSync: DeltaSyncEngine,
-    private getLatestAuthStatus: () => AuthStatus | null
+    private getLatestAuthStatus: () => AuthStatus | null,
+    private onReauthenticate?: () => void
   ) {}
 
   public resolveWebviewView(
@@ -115,15 +116,30 @@ export class NotebookPanelProvider implements vscode.WebviewViewProvider, vscode
       }
 
       case 'reauthenticate': {
-        vscode.commands.executeCommand(COMMANDS.REAUTHENTICATE);
+        if (this.onReauthenticate) {
+          this.onReauthenticate();
+        } else {
+          vscode.commands.executeCommand(COMMANDS.REAUTHENTICATE);
+        }
         break;
       }
 
       case 'getAuthStatus': {
+        let status = this.getLatestAuthStatus();
+        if (!status || !status.ok) {
+          status = await checkNotebookLMAuth();
+        }
         this.postMessage({
           type: 'authStatus',
-          status: this.getLatestAuthStatus()
+          status
         });
+        if (status.ok) {
+          const notebooks = await this.client.listNotebooks();
+          this.postMessage({
+            type: 'notebookList',
+            notebooks
+          });
+        }
         break;
       }
 
