@@ -8,7 +8,7 @@ import { NotebookClient } from '../api/notebookClient';
 import { QueryRunner } from '../api/queryRunner';
 import { DeltaSyncEngine } from '../sync/deltaSync';
 import { AuthStatus } from '../auth/preflight';
-import { CONFIG_KEYS, DEFAULTS } from '../constants';
+import { COMMANDS, CONFIG_KEYS, DEFAULTS } from '../constants';
 
 export class NotebookPanelProvider implements vscode.WebviewViewProvider, vscode.Disposable {
   private view?: vscode.WebviewView;
@@ -66,11 +66,37 @@ export class NotebookPanelProvider implements vscode.WebviewViewProvider, vscode
           type: 'authStatus',
           status: this.getLatestAuthStatus()
         });
+        const config = vscode.workspace.getConfiguration();
+        const activeNotebookId = config.get<string>(CONFIG_KEYS.ACTIVE_NOTEBOOK_ID);
+        if (activeNotebookId) {
+          this.postMessage({
+            type: 'activeNotebookChanged',
+            notebookId: activeNotebookId
+          });
+        }
         const notebooks = await this.client.listNotebooks();
         this.postMessage({
           type: 'notebookList',
           notebooks
         });
+        break;
+      }
+
+      case 'selectNotebook': {
+        const { notebookId } = message;
+        if (notebookId) {
+          const config = vscode.workspace.getConfiguration();
+          await config.update(
+            CONFIG_KEYS.ACTIVE_NOTEBOOK_ID,
+            notebookId,
+            vscode.ConfigurationTarget.Workspace
+          );
+        }
+        break;
+      }
+
+      case 'reauthenticate': {
+        vscode.commands.executeCommand(COMMANDS.REAUTHENTICATE);
         break;
       }
 

@@ -1,6 +1,6 @@
 /**
  * Session Watcher Daemon
- * Monitors NotebookLM auth status every 30 minutes and notifies UI.
+ * Monitors NotebookLM auth status every 30 minutes, updates status bar, and triggers 1-click re-auth.
  */
 
 import * as vscode from 'vscode';
@@ -10,16 +10,17 @@ import { DEFAULTS } from '../constants';
 export class SessionWatcher implements vscode.Disposable {
   private timer: NodeJS.Timeout | null = null;
   private currentStatus: AuthStatus | null = null;
+  private hasPromptedThisSession = false;
   private readonly onDidChangeStatusEmitter = new vscode.EventEmitter<AuthStatus>();
   public readonly onDidChangeStatus = this.onDidChangeStatusEmitter.event;
 
   constructor(private readonly intervalMs: number = DEFAULTS.SESSION_CHECK_INTERVAL_MS) {}
 
   public start(): void {
-    // Immediate initial check
+    // Immediate non-blocking check on startup (< 3s SLA)
     this.checkNow().catch(() => {});
 
-    // Periodic daemon timer
+    // Periodic 30-minute keepalive check
     this.timer = setInterval(() => {
       this.checkNow().catch(() => {});
     }, this.intervalMs);
@@ -30,8 +31,11 @@ export class SessionWatcher implements vscode.Disposable {
     this.currentStatus = status;
     this.onDidChangeStatusEmitter.fire(status);
 
-    if (!status.ok && status.error?.toLowerCase().includes('expired')) {
-      this.notifyExpired();
+    if (!status.ok && !this.hasPromptedThisSession) {
+      this.hasPromptedThisSession = true;
+      this.notifyExpired(status.error);
+    } else if (status.ok) {
+      this.hasPromptedThisSession = false;
     }
 
     return status;
@@ -41,17 +45,26 @@ export class SessionWatcher implements vscode.Disposable {
     return this.currentStatus;
   }
 
-  private notifyExpired(): void {
-    vscode.window.showWarningMessage(
-      'NotebookLM authentication token has expired.',
-      'Re-authenticate'
-    ).then((choice) => {
+  public notifyExpired(errorMessage?: string): void {
+    const msg = errorMessage
+      ? `NotebookLM: ${errorMessage}`
+      : 'NotebookLM authentication token has expired.';
+
+    vscode.window.showWarningMessage(msg, 'Re-authenticate').then((choice) => {
       if (choice === 'Re-authenticate') {
-        const terminal = vscode.window.createTerminal('NotebookLM Auth');
-        terminal.show();
-        terminal.sendText('notebooklm login --browser chrome');
+        this.triggerReauthentication();
       }
     });
+  }
+
+  public triggerReauthentication(): void {
+    const terminal = vscode.window.createTerminal('NotebookLM Auth');
+    terminal.show();
+    terminal.sendText('notebooklm login --browser chrome');
+
+    vscode.window.showInformationMessage(
+      'NotebookLM browser login launched. After completing login, click "Check Auth Status".'
+    );
   }
 
   public dispose(): void {

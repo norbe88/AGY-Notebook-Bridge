@@ -96,42 +96,76 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         );
       } else {
         vscode.window.showWarningMessage(
-          `NotebookLM Disconnected: ${status.error || 'Token expired'}`
-        );
+          `NotebookLM: ${status.error || 'Authentication token expired.'}`,
+          'Re-authenticate'
+        ).then((choice) => {
+          if (choice === 'Re-authenticate') {
+            _sessionWatcher?.triggerReauthentication();
+          }
+        });
       }
     }),
 
-    vscode.commands.registerCommand(COMMANDS.SWITCH_NOTEBOOK, async () => {
-      const notebooks = await client.listNotebooks();
-      if (notebooks.length === 0) {
-        vscode.window.showWarningMessage('No notebooks found or failed to fetch notebook list.');
-        return;
-      }
+    vscode.commands.registerCommand(COMMANDS.REAUTHENTICATE, () => {
+      _sessionWatcher?.triggerReauthentication();
+    }),
 
-      const items = notebooks.map((nb) => ({
-        label: nb.title,
+    vscode.commands.registerCommand(COMMANDS.SWITCH_NOTEBOOK, async () => {
+      const config = vscode.workspace.getConfiguration();
+      const currentId = config.get<string>(CONFIG_KEYS.ACTIVE_NOTEBOOK_ID) || '';
+
+      const notebooks = await client.listNotebooks();
+
+      type QuickPickItemWithId = vscode.QuickPickItem & { notebookId?: string; isManual?: boolean };
+      const items: QuickPickItemWithId[] = notebooks.map((nb) => ({
+        label: `${nb.id === currentId ? '$(check) ' : ''}${nb.title}`,
         description: `${nb.sourceCount} sources`,
         detail: nb.id,
-        notebook: nb
+        notebookId: nb.id
       }));
 
-      const selected = await vscode.window.showQuickPick(items, {
-        placeHolder: 'Select active NotebookLM notebook for current workspace'
+      items.push({
+        label: '$(edit) Enter Notebook ID manually...',
+        description: 'Set custom or shared Notebook ID',
+        isManual: true
       });
 
-      if (selected) {
-        const config = vscode.workspace.getConfiguration();
+      const selected = await vscode.window.showQuickPick(items, {
+        placeHolder: currentId
+          ? `Current: ${currentId} — Select or enter Notebook ID`
+          : 'Select active NotebookLM notebook for current workspace'
+      });
+
+      if (!selected) return;
+
+      let chosenId: string | undefined;
+      let chosenTitle = 'Custom Notebook';
+
+      if (selected.isManual) {
+        chosenId = await vscode.window.showInputBox({
+          prompt: 'Enter NotebookLM Notebook ID or UUID',
+          value: currentId,
+          placeHolder: 'e.g. 773c0f5a-f01b-431e-8a56-b2fedce397ac'
+        });
+        if (!chosenId?.trim()) return;
+        chosenId = chosenId.trim();
+      } else {
+        chosenId = selected.notebookId;
+        chosenTitle = selected.label.replace('$(check) ', '');
+      }
+
+      if (chosenId) {
         await config.update(
           CONFIG_KEYS.ACTIVE_NOTEBOOK_ID,
-          selected.notebook.id,
+          chosenId,
           vscode.ConfigurationTarget.Workspace
         );
         vscode.window.showInformationMessage(
-          `Active notebook set to: ${selected.notebook.title}`
+          `Active notebook set to: ${chosenTitle} (${chosenId})`
         );
         _panelProvider?.postMessage({
           type: 'activeNotebookChanged',
-          notebookId: selected.notebook.id
+          notebookId: chosenId
         });
       }
     }),

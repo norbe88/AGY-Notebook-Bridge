@@ -118,6 +118,14 @@ export const ResearchPanel: React.FC = () => {
     vscode.postMessage({ type: 'listNotebooks' });
   };
 
+  const handleSelectNotebook = (id: string) => {
+    setSelectedNotebookId(id);
+    vscode.postMessage({
+      type: 'selectNotebook',
+      notebookId: id
+    });
+  };
+
   const handleGenerateAudio = () => {
     if (!selectedNotebookId) return;
     setIsGeneratingAudio(true);
@@ -149,7 +157,17 @@ export const ResearchPanel: React.FC = () => {
           {authStatus?.ok ? (
             <span className="badge green">Connected</span>
           ) : (
-            <span className="badge amber">Token Expired</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span className="badge amber">Token Expired</span>
+              <button
+                onClick={() => vscode.postMessage({ type: 'reauthenticate' })}
+                style={{ fontSize: 10, padding: '1px 6px' }}
+                className="primary"
+                title="Log in via Google Chrome"
+              >
+                Re-authenticate
+              </button>
+            </div>
           )}
         </div>
         {authStatus?.email && (
@@ -163,7 +181,7 @@ export const ResearchPanel: React.FC = () => {
       <NotebookList
         notebooks={notebooks}
         selectedId={selectedNotebookId}
-        onSelect={setSelectedNotebookId}
+        onSelect={handleSelectNotebook}
         onSync={handleSyncSources}
         onRefresh={handleRefreshNotebooks}
       />

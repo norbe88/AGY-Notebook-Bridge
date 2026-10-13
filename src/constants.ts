@@ -14,7 +14,8 @@ export const COMMANDS = {
   RUN_QUERY: 'notebook-bridge.query',
   AUDIO_OVERVIEW: 'notebook-bridge.audioOverview',
   SWITCH_NOTEBOOK: 'notebook-bridge.switchNotebook',
-  AUTH_STATUS: 'notebook-bridge.authStatus'
+  AUTH_STATUS: 'notebook-bridge.authStatus',
+  REAUTHENTICATE: 'notebook-bridge.reauthenticate'
 } as const;
 
 export const CONFIG_KEYS = {

@@ -72,6 +72,10 @@
       {
         "command": "notebook-bridge.authStatus",
         "title": "Notebook Bridge: Check Auth Status"
+      },
+      {
+        "command": "notebook-bridge.reauthenticate",
+        "title": "Notebook Bridge: Re-authenticate Session"
       }
     ],
     "menus": {
