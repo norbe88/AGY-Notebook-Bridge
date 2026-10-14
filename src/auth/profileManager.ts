@@ -120,23 +120,7 @@ export class ProfileManager {
       loginArgs.push('--fresh');
     }
 
-    try {
-      if (process.platform === 'win32') {
-        const fullCmd = `& "${cmd}" ${loginArgs.map((a) => `"${a}"`).join(' ')}`;
-        const child = spawn('powershell.exe', ['-NoProfile', '-Command', fullCmd], {
-          detached: true,
-          stdio: 'ignore'
-        });
-        child.unref();
-      } else {
-        const child = spawn(cmd, loginArgs, { detached: true, stdio: 'ignore' });
-        child.unref();
-      }
-    } catch (err) {
-      console.error('[ProfileManager] Failed to spawn login process:', err);
-    }
-
-    // Also open integrated terminal as transparent fallback
+    // Open integrated terminal directly with full desktop interactive station
     const terminal = vscode.window.createTerminal(`NotebookLM Auth${profileName ? ` (${profileName})` : ''}`);
     terminal.show(true);
     setTimeout(() => {

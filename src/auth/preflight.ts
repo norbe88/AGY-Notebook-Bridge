@@ -28,16 +28,22 @@ export function getNotebookLMCli(): { cmd: string; baseArgs: string[] } {
 
 export function resolveStoragePath(): string | null {
   const envHome = process.env.NOTEBOOKLM_HOME;
-  if (envHome) {
-    const candidate = path.join(envHome, 'profiles', 'default', 'storage_state.json');
-    if (fs.existsSync(candidate)) return candidate;
+  const homeDir = envHome && fs.existsSync(envHome) ? envHome : path.join(os.homedir(), '.notebooklm');
+
+  let activeProfile = 'default';
+  const configPath = path.join(homeDir, 'config.json');
+  if (fs.existsSync(configPath)) {
+    try {
+      const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      if (cfg.default_profile) activeProfile = cfg.default_profile;
+    } catch {}
   }
 
-  const holdingCandidate = 'I:\\My Drive\\CARVANA_SRL\\00_HOLDING_CORE\\00_SECRETS_VAULT\\NotebookLM_Auth\\profiles\\default\\storage_state.json';
-  if (fs.existsSync(holdingCandidate)) return holdingCandidate;
+  const activeCandidate = path.join(homeDir, 'profiles', activeProfile, 'storage_state.json');
+  if (fs.existsSync(activeCandidate)) return activeCandidate;
 
-  const localCandidate = path.join(os.homedir(), '.notebooklm', 'profiles', 'default', 'storage_state.json');
-  if (fs.existsSync(localCandidate)) return localCandidate;
+  const defaultCandidate = path.join(homeDir, 'profiles', 'default', 'storage_state.json');
+  if (fs.existsSync(defaultCandidate)) return defaultCandidate;
 
   return null;
 }

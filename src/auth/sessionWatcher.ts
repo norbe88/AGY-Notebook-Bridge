@@ -79,26 +79,9 @@ export class SessionWatcher implements vscode.Disposable {
 
   public triggerReauthentication(): void {
     const { cmd, baseArgs } = getNotebookLMCli();
-    const loginArgs = [...baseArgs, 'login', '--browser', 'chrome'];
+    const loginArgs = [...baseArgs, 'login', '--fresh', '--browser', 'chrome'];
 
-    // 1. Launch detached external process so Chrome opens unconditionally on Windows
-    try {
-      if (process.platform === 'win32') {
-        const fullCmd = `& "${cmd}" ${loginArgs.map((a) => `"${a}"`).join(' ')}`;
-        const child = spawn('powershell.exe', ['-NoProfile', '-Command', fullCmd], {
-          detached: true,
-          stdio: 'ignore'
-        });
-        child.unref();
-      } else {
-        const child = spawn(cmd, loginArgs, { detached: true, stdio: 'ignore' });
-        child.unref();
-      }
-    } catch (err) {
-      console.error('[SessionWatcher] Failed to spawn login process:', err);
-    }
-
-    // 2. Open integrated terminal for full transparency and fallback interaction
+    // Open integrated terminal for full interactive desktop visibility
     const terminal = vscode.window.createTerminal('NotebookLM Auth');
     terminal.show(true);
     setTimeout(() => {
